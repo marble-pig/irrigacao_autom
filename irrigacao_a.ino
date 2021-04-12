@@ -6,7 +6,9 @@ int btnW, btnA, btnS, btnD;
 int HorAtual[3]; //[Hora, Minuto, Segundo]
 int HorValv1[4], HorValv2[4]; //[Hora abrir, Minuto abrir, Hora fechar, Minuto fechar]
 
-//
+//entradas e saídas
+const int ent_bCima = 6, ent_bBaixo = 7, ent_bEsq = 8, ent_bDir = 9;
+const int saiV1 = 0, saiV2 = 1;
 
 //declara tela LCD
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
@@ -15,16 +17,20 @@ LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
 void setup(){
 	lcd.begin(16, 2);
 
-	pinMode(0, OUTPUT); //valvula 1
-	pinMode(1, OUTPUT); //valvula 2
-	pinMode(6, INPUT_PULLUP); //botao para cima
-	pinMode(7, INPUT_PULLUP); //botao para esquerda
-	pinMode(8, INPUT_PULLUP); //botao para baixo
-	pinMode(9, INPUT_PULLUP); ///botao para direita
+	pinMode(saiV1, OUTPUT); //valvula 1
+	pinMode(saiV2, OUTPUT); //valvula 2
+	pinMode(ent_bCima, INPUT_PULLUP); //botao para cima
+	pinMode(ent_bBaixo, INPUT_PULLUP); //botao para baixo
+	pinMode(ent_bEsq, INPUT_PULLUP); //botao para esquerda
+	pinMode(ent_bDir, INPUT_PULLUP); ///botao para direita
 }
 
 void AlteraValv(int p_valv, int p_comando) {
 	/* Comandos pra abrir e fechar válvulas */
+}
+
+void pegaHorario(){
+	/* Busca hora gravada no módulo RTC */
 }
 
 void telaN1 () {
@@ -44,10 +50,10 @@ void telaN3 () {
 
 void loop(){
 	pegaHorario();
-	btnW = digitalRead(6);
-	btnA = digitalRead(7);
-	btnS = digitalRead(8);
-	btnD = digitalRead(9);
+	btnW = digitalRead(ent_bCima);
+	btnA = digitalRead(ent_bBaixo);
+	btnS = digitalRead(ent_bEsq);
+	btnD = digitalRead(ent_bDir);
 
 	switch (tela)
 	{
