@@ -5,7 +5,7 @@
 //variaveis globais
 int tela = 1;
 int DataHorAtual[5]; //[Hora, Minuto, Dia, Mes, Ano]
-int HorAbreValv1[2], HorFechValv1[2], HorAbreValv2[2], HorFechValv2[2]; //[Hora, Minuto]
+int HorAbreValv[2, 2], HorFechValv[2, 2]; //[Valv1[Hora, Minuto], Valv2[Hora, Minuto]]
 bool statusV1 = false, statusV2 = false; //false = 0 = fechado / true = 1 = aberto
 bool vira0HV1, vira0HV2; //false = abre e fecha no mesmo dia / true = abre em um dia e fecha em outro
 bool novaTela = false;
@@ -96,7 +96,7 @@ void escreveData(int p_Dia, int p_Mes, int p_Ano) {
 	lcd.print(p_Ano);
 }
 
-void telaAjusteN1() {
+void telaAjusteIni() {
 	int posAtual = 1, HHMM = 0;
 
 	Serial.println("Tela Ajuste 1");
@@ -173,13 +173,23 @@ void telaAjusteN1() {
 	rtc.adjust(DateTime(DataHorAtual[4], DataHorAtual[3], DataHorAtual[2], DataHorAtual[0], DataHorAtual[1], 0));
 }
 
-void telaAjusteN2() {
+void telaAjusteValv(int p_numValv) {
+	int posAtual = 1, HHMM = 0;
+
+	Serial.println("Tela Ajuste 2");
+	lcd.cursor();
+	lcd.blink();
+	while (!btnSair.isPressed()){
+		loopBtn();
+		lcd.setCursor(posAtual, 1);
+		pegaHorario();
+		confereProg();
+	}
+	lcd.noBlink();
+	lcd.noCursor();
 }
 
-void telaAjusteN3(){
-}
-
-void telaN1() {
+void telaIni() {
 	/* Mostrar tela 1
 	Opções de ajuste */
 	char charV1[4], charV2[4];
@@ -208,53 +218,37 @@ void telaN1() {
 	lcd.setCursor(12, 1);
 	lcd.print(charV2);
 
-	if (btnSelect.isPressed()) telaAjusteN1();
+	if (btnSelect.isPressed()) telaAjusteIni();
 }
 
-void telaN2() {
-	/* Mostrar tela 2
+void telaValv(int p_numValv) {
+	/* Mostrar tela de válvulas
 	Opções de ajuste */
 	if (novaTela) {
-		Serial.println("Tela 2");
+		Serial.print("Tela válvula ");
+		Serial.println(p_numValv);
 		lcd.clear();
 		novaTela = false;
 	}
 	lcd.setCursor(0, 0);
-	lcd.print("Valvula 1");
+	lcd.print("Valvula ");
+	lcd.print(p_numValv);
 	lcd.setCursor(0, 1);
-	escreveHora(HorAbreValv1[0], HorAbreValv1[1]);
+	escreveHora(HorAbreValv[p_numValv - 1, 0], HorAbreValv[p_numValv - 1, 1]);
 	lcd.write(" <-> ");
-	escreveHora(HorFechValv1[0], HorFechValv1[1]);
+	escreveHora(HorFechValv[p_numValv - 1, 0], HorFechValv[p_numValv - 1, 1]);
 
-	if(btnSelect.isPressed()) telaAjusteN2();
-}
-
-void telaN3() {
-	/* Mostrar tela 3
-	Opções de ajuste */
-	if (novaTela) {
-		Serial.println("Tela 3");
-		lcd.clear();
-		novaTela = false;
-	}
-	lcd.setCursor(0, 0);
-	lcd.print("Valvula 2");
-	lcd.setCursor(0, 1);
-	escreveHora(HorAbreValv2[0], HorAbreValv2[1]);
-	lcd.write(" <-> ");
-	escreveHora(HorFechValv2[0], HorFechValv2[1]);
-
-	if(btnSelect.isPressed()) telaAjusteN3();
+	if(btnSelect.isPressed()) telaAjusteValv(p_numValv);
 }
 
 void confereProg() {
 	int HHMMatual, HHMMabreV1, HHMMfechaV1, HHMMabreV2, HHMMfechaV2;
 
 	HHMMatual = DataHorAtual[0] * 100 + DataHorAtual[1];
-	HHMMabreV1 = HorAbreValv1[0] * 100 + HorAbreValv1[1];
-	HHMMfechaV1 = HorFechValv1[0] * 100 + HorFechValv1[1];
-	HHMMabreV2 = HorAbreValv2[0] * 100 + HorAbreValv2[1];
-	HHMMfechaV2 = HorFechValv2[0] * 100 + HorFechValv2[1];
+	HHMMabreV1 = HorAbreValv[0, 0] * 100 + HorAbreValv[0, 1];
+	HHMMfechaV1 = HorFechValv[0, 0] * 100 + HorFechValv[0, 1];
+	HHMMabreV2 = HorAbreValv[1, 0] * 100 + HorAbreValv[1, 1];
+	HHMMfechaV2 = HorFechValv[1, 0] * 100 + HorFechValv[1, 1];
 
 	if (!vira0HV1) {
 		if ((HHMMatual >= HHMMabreV1 && HHMMatual <= HHMMfechaV1) && statusV1)
@@ -313,13 +307,13 @@ void loop() {
 		tela = 3;
 		break;
 	case 1:
-		telaN1();
+		telaIni();
 		break;
 	case 2:
-		telaN2();
+		telaValv(1);
 		break;
 	case 3:
-		telaN3();
+		telaValv(2);
 		break;
 	
 	default:
