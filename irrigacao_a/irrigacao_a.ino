@@ -5,7 +5,7 @@
 //variaveis globais
 int tela = 1;
 int DataHorAtual[5]; //[Hora, Minuto, Dia, Mes, Ano]
-int HorAbreValv[2, 2], HorFechValv[2, 2]; //[Valv1[Hora, Minuto], Valv2[Hora, Minuto]]
+int HorAbreValv[2][2], HorFechValv[2][2]; //[Valv1[Hora, Minuto], Valv2[Hora, Minuto]]
 bool statusV1 = false, statusV2 = false; //false = 0 = fechado / true = 1 = aberto
 bool vira0HV1, vira0HV2; //false = abre e fecha no mesmo dia / true = abre em um dia e fecha em outro
 bool novaTela = false;
@@ -97,23 +97,61 @@ void escreveData(int p_Dia, int p_Mes, int p_Ano) {
 }
 
 void telaAjusteIni() {
-	int posAtual = 1, HHMM = 0;
+	int posAtual, HHMM = 0, valorMax, valorMin;
+	bool mudaHHMM = true;
 
 	Serial.println("Tela Ajuste 1");
 	lcd.setCursor(0, 1);
 	lcd.print("                ");
-	lcd.cursor();
+	//lcd.cursor();
 	lcd.blink();
 	while (!btnSair.isPressed()) {
 		loopBtn();
+		if (mudaHHMM) {
+			switch (HHMM)
+			{
+			case 0:
+				valorMin = 0;
+				valorMax = 23;
+				posAtual = 1;
+				break;
+			case 1:
+				valorMin = 0;
+				valorMax = 59;
+				posAtual = 4;
+				break;
+			case 2:
+				valorMin = 1;
+				if (DataHorAtual[3] == 1 || DataHorAtual[3] == 3 || DataHorAtual[3] == 5 || DataHorAtual[3] == 7 || DataHorAtual[3] == 8 || DataHorAtual[3] == 10 || DataHorAtual[3] == 12)
+					valorMax = 31;
+				else if (DataHorAtual[3] == 4 || DataHorAtual[3] == 6 || DataHorAtual[3] == 9 || DataHorAtual[3] == 11)
+					valorMax = 30;
+				else
+					valorMax = 29;
+				posAtual = 7;
+				break;
+			case 3:
+				valorMin = 1;
+				valorMax = 12;
+				posAtual = 10;
+				break;
+			case 4:
+				valorMin = 2020;
+				valorMax = 2100;
+				posAtual = 15;
+				break;
+			default:
+				HHMM = 0;
+				mudaHHMM = true;
+				break;
+			}
+			mudaHHMM = false;
+		}
 
 		lcd.setCursor(posAtual, 0);
 		if (btnCima.isPressed()) {
 			DataHorAtual[HHMM] ++;
-			if (DataHorAtual[1] > 59) DataHorAtual[1] = 0;
-			else if (DataHorAtual[0] > 23) DataHorAtual[0] = 0;
-			else if (DataHorAtual[2] > 31) DataHorAtual[2] = 1;
-			else if (DataHorAtual[3] > 12) DataHorAtual[3] = 1;
+			if (DataHorAtual[HHMM] > valorMax) DataHorAtual[HHMM] = valorMin;
 			lcd.setCursor(0, 0);
 			escreveHora(DataHorAtual[0], DataHorAtual[1]);
 			lcd.write(" ");
@@ -121,24 +159,7 @@ void telaAjusteIni() {
 		}
 		else if (btnBaixo.isPressed()) {
 			DataHorAtual[HHMM] --;
-			if (DataHorAtual[HHMM] < 1) {
-				switch (HHMM)
-				{
-				case 0:
-					if (DataHorAtual[0] < 0) DataHorAtual[0] = 23;
-					break;
-				case 1:
-					if (DataHorAtual[1] < 0) DataHorAtual[1] = 59;
-					break;
-				case 2:
-					DataHorAtual[2] = 31;
-					break;
-				case 3:
-					DataHorAtual[3] = 12;
-				default:
-					break;
-				}
-			}
+			if (DataHorAtual[HHMM] < valorMin) DataHorAtual[HHMM] = valorMax;
 			lcd.setCursor(0, 0);
 			escreveHora(DataHorAtual[0], DataHorAtual[1]);
 			lcd.write(" ");
@@ -146,47 +167,93 @@ void telaAjusteIni() {
 		}
 		else if (btnSelect.isPressed()) {
 			HHMM++;
-			switch (HHMM)
-			{
-			case 0: //hora
-				posAtual = 1;
-				break;
-			case 1: //minuto
-				posAtual = 4;
-			case 2: //dia
-				posAtual = 7;
-			case 3: //mes
-				posAtual = 10;
-			case 4: //ano
-				posAtual = 13;
-			default:
-				HHMM = 0;
-				posAtual = 1;
-				break;
-			}
+			mudaHHMM = true;
 		}
 	}
 	lcd.noBlink();
-	lcd.noCursor();
+	//lcd.noCursor();
 
 	/* Escrever hora no módulo RTC */
 	rtc.adjust(DateTime(DataHorAtual[4], DataHorAtual[3], DataHorAtual[2], DataHorAtual[0], DataHorAtual[1], 0));
 }
 
 void telaAjusteValv(int p_numValv) {
-	int posAtual = 1, HHMM = 0;
+	int posAtual = 1, HHMM = 0, valorMax;
 
 	Serial.println("Tela Ajuste 2");
-	lcd.cursor();
+	//lcd.cursor();
 	lcd.blink();
 	while (!btnSair.isPressed()){
 		loopBtn();
 		lcd.setCursor(posAtual, 1);
+
+		if (HHMM == 0)
+			valorMax = 23;
+		else
+			valorMax = 59;
+		if (btnCima.isPressed()) {
+			if (posAtual < 10) {
+				HorAbreValv[p_numValv - 1][HHMM]++;
+				if (HorAbreValv[p_numValv - 1][HHMM] > valorMax)
+					HorAbreValv[p_numValv - 1][HHMM] = 0;
+			}
+			else {
+				HorFechValv[p_numValv - 1][HHMM]++;
+				if (HorFechValv[p_numValv - 1][HHMM] > valorMax)
+					HorFechValv[p_numValv - 1][HHMM] = 0;
+			}
+			lcd.setCursor(0, 1);
+			escreveHora(HorAbreValv[p_numValv - 1][0], HorAbreValv[p_numValv - 1][1]);
+			lcd.write(" <-> ");
+			escreveHora(HorFechValv[p_numValv - 1][0], HorFechValv[p_numValv - 1][1]);
+		}
+		else if (btnBaixo.isPressed()) {
+			if (posAtual < 10) {
+				HorAbreValv[p_numValv - 1][HHMM]--;
+				if (HorAbreValv[p_numValv - 1][HHMM] < 0)
+					HorAbreValv[p_numValv - 1][HHMM] = valorMax;
+			}
+			else {
+				HorFechValv[p_numValv - 1][HHMM]--;
+				if (HorFechValv[p_numValv - 1][HHMM] < 0)
+					HorFechValv[p_numValv - 1][HHMM] = valorMax;
+			}
+			lcd.setCursor(0, 1);
+			escreveHora(HorAbreValv[p_numValv - 1][0], HorAbreValv[p_numValv - 1][1]);
+			lcd.write(" <-> ");
+			escreveHora(HorFechValv[p_numValv - 1][0], HorFechValv[p_numValv - 1][1]);
+		}
+		else if (btnSelect.isPressed()){
+			switch (posAtual)
+			{
+			case 1:
+				posAtual = 4;
+				HHMM = 1;
+				break;
+			case 4:
+				posAtual = 11;
+				HHMM = 0;
+				break;
+			case 11:
+				posAtual = 14;
+				HHMM = 1;
+				break;
+			case 14:
+				posAtual = 1;
+				HHMM = 0;
+				break;
+			default:
+				posAtual = 1;
+				HHMM = 0;
+				break;
+			}
+		}
 		pegaHorario();
 		confereProg();
 	}
 	lcd.noBlink();
-	lcd.noCursor();
+	//lcd.noCursor();
+	novaTela = true;
 }
 
 void telaIni() {
@@ -229,14 +296,14 @@ void telaValv(int p_numValv) {
 		Serial.println(p_numValv);
 		lcd.clear();
 		novaTela = false;
+		lcd.setCursor(0, 0);
+		lcd.print("Valvula ");
+		lcd.print(p_numValv);
+		lcd.setCursor(0, 1);
+		escreveHora(HorAbreValv[p_numValv - 1][0], HorAbreValv[p_numValv - 1][1]);
+		lcd.write(" <-> ");
+		escreveHora(HorFechValv[p_numValv - 1][0], HorFechValv[p_numValv - 1][1]);
 	}
-	lcd.setCursor(0, 0);
-	lcd.print("Valvula ");
-	lcd.print(p_numValv);
-	lcd.setCursor(0, 1);
-	escreveHora(HorAbreValv[p_numValv - 1, 0], HorAbreValv[p_numValv - 1, 1]);
-	lcd.write(" <-> ");
-	escreveHora(HorFechValv[p_numValv - 1, 0], HorFechValv[p_numValv - 1, 1]);
 
 	if(btnSelect.isPressed()) telaAjusteValv(p_numValv);
 }
@@ -245,10 +312,10 @@ void confereProg() {
 	int HHMMatual, HHMMabreV1, HHMMfechaV1, HHMMabreV2, HHMMfechaV2;
 
 	HHMMatual = DataHorAtual[0] * 100 + DataHorAtual[1];
-	HHMMabreV1 = HorAbreValv[0, 0] * 100 + HorAbreValv[0, 1];
-	HHMMfechaV1 = HorFechValv[0, 0] * 100 + HorFechValv[0, 1];
-	HHMMabreV2 = HorAbreValv[1, 0] * 100 + HorAbreValv[1, 1];
-	HHMMfechaV2 = HorFechValv[1, 0] * 100 + HorFechValv[1, 1];
+	HHMMabreV1 = HorAbreValv[0][0] * 100 + HorAbreValv[0][1];
+	HHMMfechaV1 = HorFechValv[0][0] * 100 + HorFechValv[0][1];
+	HHMMabreV2 = HorAbreValv[1][0] * 100 + HorAbreValv[1][1];
+	HHMMfechaV2 = HorFechValv[1][0] * 100 + HorFechValv[1][1];
 
 	if (!vira0HV1) {
 		if ((HHMMatual >= HHMMabreV1 && HHMMatual <= HHMMfechaV1) && statusV1)
