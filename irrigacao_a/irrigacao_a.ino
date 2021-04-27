@@ -12,7 +12,7 @@ bool novaTela = false;
 
 //entradas e saídas
 const int ent_bCima = 6, ent_bBaixo = 7, ent_bEsq = 8, ent_bDir = 9;
-const int saiV1 = 0, saiV2 = 1;
+const int pinValv1 = 0, pinValv2 = 1;
 ezButton btnCima(ent_bCima);
 ezButton btnBaixo(ent_bBaixo);
 ezButton btnSelect(ent_bDir);
@@ -24,6 +24,13 @@ RTC_DS1307 rtc;
 //declara tela LCD
 const int rs = 12, en = 11, d4 = 5, d5 = 4, d6 = 3, d7 = 2;
 LiquidCrystal lcd(rs, en, d4, d5, d6, d7);
+
+/*
+void adjustTime(int p_ano, int p_mes, int p_dia, int p_hora, int p_min, int p_seg) {
+
+
+	rtc.adjust(DateTime(p_ano, p_mes, p_dia, p_hora, p_min, p_seg));
+}*/
 
 void horaFalsa(){
 	DataHorAtual[0] = 9;
@@ -45,8 +52,8 @@ void setup() {
 	}
 	else lcd.print("Inicializando...");
 
-	pinMode(saiV1, OUTPUT); //valvula 1
-	pinMode(saiV2, OUTPUT); //valvula 2
+	pinMode(pinValv1, OUTPUT); //valvula 1
+	pinMode(pinValv2, OUTPUT); //valvula 2
 	btnCima.setDebounceTime(50);
 	btnBaixo.setDebounceTime(50);
 	btnSelect.setDebounceTime(50);
@@ -65,6 +72,7 @@ void loopBtn(){
 
 void AlteraValv(int p_valv, int p_comando) {
 	/* Comandos pra abrir e fechar válvulas */
+	digitalWrite(p_valv, p_comando);
 }
 
 void pegaHorario() {
@@ -76,6 +84,11 @@ void pegaHorario() {
 	DataHorAtual[2] = agora.day();
 	DataHorAtual[3] = agora.month();
 	DataHorAtual[4] = agora.year();
+
+	if (DataHorAtual[0] > 23) DataHorAtual[0] = 23;
+	if (DataHorAtual[1] > 59) DataHorAtual[1] = 59;
+	if (DataHorAtual[2] > 31) DataHorAtual[2] = 31;
+	if (DataHorAtual[3] > 12) DataHorAtual[3] = 12;
 }
 
 void escreveHora(int p_Hora, int p_Minuto) {
@@ -310,6 +323,7 @@ void telaValv(int p_numValv) {
 
 void confereProg() {
 	int HHMMatual, HHMMabreV1, HHMMfechaV1, HHMMabreV2, HHMMfechaV2;
+	int Abrir = LOW, Fechar = HIGH;
 
 	HHMMatual = DataHorAtual[0] * 100 + DataHorAtual[1];
 	HHMMabreV1 = HorAbreValv[0][0] * 100 + HorAbreValv[0][1];
@@ -319,27 +333,27 @@ void confereProg() {
 
 	if (!vira0HV1) {
 		if ((HHMMatual >= HHMMabreV1 && HHMMatual <= HHMMfechaV1) && statusV1)
-			AlteraValv(1, 1); //Abrir valvula 1
+			AlteraValv(pinValv1, Abrir); //Abrir valvula 1
 		else if ((HHMMatual <= HHMMabreV1 && HHMMatual >= HHMMfechaV1) && !statusV1)
-			AlteraValv(1, 0); //Fechar valvula 1
+			AlteraValv(pinValv1, Fechar); //Fechar valvula 1
 	}
 	else  {
 		if ((HHMMatual <= HHMMabreV1 && HHMMatual >= HHMMfechaV1) && statusV1)
-			AlteraValv(1, 1); //Abrir valvula 1
+			AlteraValv(pinValv1, Abrir); //Abrir valvula 1
 		else if ((HHMMatual >= HHMMabreV1 && HHMMatual <= HHMMfechaV1) && !statusV1)
-			AlteraValv(1, 0); //Fechar valvula 1
+			AlteraValv(pinValv1, Fechar); //Fechar valvula 1
 	}
 	if (!vira0HV2) {
 		if ((HHMMatual >= HHMMabreV2 && HHMMatual <= HHMMfechaV2) && statusV2)
-			AlteraValv(2, 1); //Abrir valvula 1
+			AlteraValv(pinValv2, Abrir); //Abrir valvula 2
 		else if ((HHMMatual <= HHMMabreV2 && HHMMatual >= HHMMfechaV2) && !statusV2)
-			AlteraValv(2, 0); //Fechar valvula 1
+			AlteraValv(pinValv2, Fechar); //Fechar valvula 2
 	}
 	else {
 		if ((HHMMatual <= HHMMabreV2 && HHMMatual >= HHMMfechaV2) && statusV2)
-			AlteraValv(2, 1); //Abrir valvula 1
+			AlteraValv(pinValv2, Abrir); //Abrir valvula 2
 		else if ((HHMMatual >= HHMMabreV2 && HHMMatual <= HHMMfechaV2) && !statusV2)
-			AlteraValv(2, 0); //Fechar valvula 1
+			AlteraValv(pinValv2, Fechar); //Fechar valvula 2
 	}
 }
 
